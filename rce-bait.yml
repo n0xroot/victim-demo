@@ -1,1 +1,36 @@
+name: rce-bait
+on:
+  workflow_run:
+    workflows: [trigger]
+    types: [completed]
+
+jobs:
+  consume:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: dump actors  # ← THE deciding observation
+        run: |
+          echo "context.actor        = ${{ github.actor }}"
+          echo "is bot (context)     = ${{ endsWith(github.actor, '[bot]') }}"
+          echo "workflow_run.actor   = ${{ github.event.workflow_run.actor.login }}"
+          echo "head_sha             = ${{ github.event.workflow_run.head_sha }}"
+          echo "head_branch          = ${{ github.event.workflow_run.head_branch }}"
+          echo "is PR                = ${{ github.event.workflow_run.pull_requests != '' }}"
+
+      - name: checkout the completing run's head  # condition 2 — fork head?
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: does attacker .mcp.json survive?  # condition 2 payoff
+        run: |
+          if [ -f .mcp.json ]; then
+            echo "MCP-PAYLOAD-PRESENT"
+            head -c 400 .mcp.json
+          else
+            echo "NO-MCP-PAYLOAD"
+          fi
+          echo "cwd=$(pwd)"
 
