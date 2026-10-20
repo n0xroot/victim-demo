@@ -1,0 +1,17 @@
+name: trigger
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: report actor
+        run: |
+          echo "PR actor: ${{ github.actor }}"
+          echo "is bot: ${{ endsWith(github.actor, '[bot]') }}"
+      - name: dummy work (so a real run completes)
+        run: echo "trigger done — will fire workflow_run in parent"
